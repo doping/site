@@ -15,11 +15,11 @@ const THUMBNAILS = [
   "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=800&q=80",
   "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&q=80",
   "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80",
-  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
   "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80",
   "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80",
   "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
   "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&q=80",
+  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
 ]
 
 const VIDEOS_DATA = [
@@ -116,17 +116,15 @@ async function main() {
   })
 
   const creators = [creator, creator2, creator3, creator4]
+  const createdVideos: { id: string }[] = []
 
   for (let i = 0; i < VIDEOS_DATA.length; i++) {
     const vd = VIDEOS_DATA[i]
     const creatorUser = creators[i % creators.length]
     const thumb = THUMBNAILS[i % THUMBNAILS.length]
 
-    await prisma.video.upsert({
-      where: { id: `seed-video-${i}` },
-      update: { views: vd.views },
-      create: {
-        id: `seed-video-${i}`,
+    const video = await prisma.video.create({
+      data: {
         title: vd.title,
         description: `High quality ${vd.category} content perfect for commercial use. Professionally shot and edited.`,
         category: vd.category,
@@ -141,56 +139,16 @@ async function main() {
         creatorId: creatorUser.id,
       },
     })
+    createdVideos.push(video)
   }
 
-  const video0 = await prisma.video.findFirst({ where: { id: "seed-video-0" } })
-  const video1 = await prisma.video.findFirst({ where: { id: "seed-video-1" } })
-  const video2 = await prisma.video.findFirst({ where: { id: "seed-video-2" } })
-
-  if (video0 && video1 && video2) {
-    await prisma.license.upsert({
-      where: { id: "seed-license-0" },
-      update: {},
-      create: {
-        id: "seed-license-0",
-        videoId: video0.id,
-        buyerId: brand.id,
-        type: "standard",
-        price: 89,
-        currency: "USD",
-        status: "paid",
-        paymentId: "demo_pay_001",
-      },
-    })
-    await prisma.license.upsert({
-      where: { id: "seed-license-1" },
-      update: {},
-      create: {
-        id: "seed-license-1",
-        videoId: video1.id,
-        buyerId: brand.id,
-        type: "extended",
-        price: 300,
-        currency: "USD",
-        status: "paid",
-        paymentId: "demo_pay_002",
-      },
-    })
-    await prisma.license.upsert({
-      where: { id: "seed-license-2" },
-      update: {},
-      create: {
-        id: "seed-license-2",
-        videoId: video2.id,
-        buyerId: brand.id,
-        type: "standard",
-        price: 150,
-        currency: "USD",
-        status: "paid",
-        paymentId: "demo_pay_003",
-      },
-    })
-  }
+  await prisma.license.createMany({
+    data: [
+      { videoId: createdVideos[0].id, buyerId: brand.id, type: "standard", price: 89, currency: "USD", status: "paid", paymentId: "demo_pay_001" },
+      { videoId: createdVideos[1].id, buyerId: brand.id, type: "extended", price: 300, currency: "USD", status: "paid", paymentId: "demo_pay_002" },
+      { videoId: createdVideos[2].id, buyerId: brand.id, type: "standard", price: 150, currency: "USD", status: "paid", paymentId: "demo_pay_003" },
+    ],
+  })
 
   console.log("✅ Seed completed!")
   console.log("Demo accounts:")
