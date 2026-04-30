@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("creator")
+  avatar    String?
+  bio       String?
+  country   String?
+  website   String?
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  videos   Video[]
+  licenses License[]
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  url         String
+  thumbnail   String?
+  duration    Int?
+  category    String
+  tags        String   @default("")
+  price       Float    @default(0)
+  currency    String   @default("USD")
+  licenseType String   @default("standard")
+  status      String   @default("active")
+  views       Int      @default(0)
+  downloads   Int      @default(0)
+  featured    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creatorId String
+  creator   User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  licenses  License[]
+}
+
+model License {
+  id        String   @id @default(cuid())
+  videoId   String
+  buyerId   String
+  type      String
+  price     Float
+  currency  String   @default("USD")
+  status    String   @default("pending")
+  paymentId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  video Video @relation(fields: [videoId], references: [id])
+  buyer User  @relation(fields: [buyerId], references: [id])
+}
