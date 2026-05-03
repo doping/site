@@ -2,11 +2,11 @@ import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
-import Image from "next/image"
 import type { User, Video, License } from "@prisma/client"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
 import VideoCard from "@/components/VideoCard"
+import VideoPlayer from "@/components/VideoPlayer"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
 import { Eye, Clock, Tag, Award, ExternalLink } from "lucide-react"
@@ -64,20 +64,9 @@ function VideoDetailContent({ video, related, locale, session, existingLicense }
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2">
-          <div className="bg-slate-900 rounded-2xl overflow-hidden aspect-video flex items-center justify-center mb-6 relative">
-            {video.thumbnail ? (
-              <Image src={video.thumbnail} alt={video.title} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 66vw" />
-            ) : (
-              <div className="text-7xl">🎬</div>
-            )}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <a href={video.url} target="_blank" rel="noopener noreferrer" className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-xl">
-                <div className="w-0 h-0 ml-1" style={{ borderTop: "8px solid transparent", borderBottom: "8px solid transparent", borderLeft: "14px solid #7c3aed" }} />
-              </a>
-            </div>
-          </div>
+          <VideoPlayer url={video.url} thumbnail={video.thumbnail} title={video.title} />
 
-          <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 mb-3">{video.title}</h1>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 mt-6 mb-3">{video.title}</h1>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 mb-4">
             <div className="flex items-center gap-1"><Eye className="w-4 h-4" /> {video.views.toLocaleString()} {t("views")}</div>
@@ -96,7 +85,7 @@ function VideoDetailContent({ video, related, locale, session, existingLicense }
           )}
 
           <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-white font-bold text-lg overflow-hidden">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-white font-bold text-lg">
               {video.creator.name[0]}
             </div>
             <div className="flex-1">
@@ -122,7 +111,11 @@ function VideoDetailContent({ video, related, locale, session, existingLicense }
                 <p className="text-green-600 text-xs mt-1">You already own a license for this video.</p>
               </div>
             ) : (
-              <LicenseButtons video={{ id: video.id, price: video.price, currency: video.currency }} locale={locale} session={session} />
+              <LicenseButtons
+                video={{ id: video.id, price: video.price, currency: video.currency, creatorId: video.creatorId }}
+                locale={locale}
+                session={session}
+              />
             )}
 
             <div className="mt-4 pt-4 border-t border-slate-100 space-y-2 text-xs text-slate-500">

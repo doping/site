@@ -6,7 +6,7 @@ import VideoCard from "@/components/VideoCard"
 import { prisma } from "@/lib/prisma"
 import ExploreFilters from "@/components/ExploreFilters"
 
-const CATEGORIES = ["all", "lifestyle", "travel", "food", "technology", "sports", "fashion", "nature", "animals", "music", "business"]
+const CATEGORIES = ["all", "lifestyle", "travel", "food", "technology", "sports", "fashion", "nature", "animals", "music", "business", "diy", "gaming", "comedy", "fitness", "education", "beauty", "art"]
 
 type VideoWithCreator = Video & { creator: User }
 

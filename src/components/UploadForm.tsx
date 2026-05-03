@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { Upload, CheckCircle, Film, X, Loader2 } from "lucide-react"
 
-const CATEGORIES = ["lifestyle", "travel", "food", "technology", "sports", "fashion", "nature", "animals", "music", "business"]
+const CATEGORIES = ["lifestyle", "travel", "food", "technology", "sports", "fashion", "nature", "animals", "music", "business", "diy", "gaming", "comedy", "fitness", "education", "beauty", "art"]
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dxp820xti"
 const UPLOAD_PRESET = "cliplicense_videos"
 

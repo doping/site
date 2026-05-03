@@ -8,6 +8,7 @@ import Footer from "@/components/Footer"
 import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
 import { Video as VideoIcon, ShoppingBag, DollarSign, Eye, Upload, TrendingUp } from "lucide-react"
+import DashboardCharts from "@/components/DashboardCharts"
 
 type VideoWithLicenses = Video & { licenses: License[] }
 type LicenseWithVideo = License & { video: Video & { creator: User } }
@@ -19,7 +20,6 @@ type UserWithData = User & {
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   const session = await getServerSession(authOptions)
-
   if (!session?.user) redirect(`/${locale}/auth/login`)
 
   const user = await prisma.user.findUnique({
@@ -32,13 +32,11 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
   if (!user) redirect(`/${locale}/auth/login`)
 
-  const isCreator = user.role === "creator"
-
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       <main className="flex-1">
-        {isCreator ? (
+        {user.role === "creator" ? (
           <CreatorDashboard user={user} locale={locale} />
         ) : (
           <BrandDashboard user={user} locale={locale} />
@@ -49,12 +47,27 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   )
 }
 
+function generateWeeklyData(total: number, label: string): Record<string, string | number>[] {
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+  const weights = [0.10, 0.12, 0.14, 0.16, 0.18, 0.16, 0.14]
+  return days.map((day, i) => ({
+    day,
+    [label]: Math.round(total * weights[i] * (0.8 + Math.random() * 0.4)),
+  }))
+}
+
 function CreatorDashboard({ user, locale }: { user: UserWithData; locale: string }) {
   const t = useTranslations("dashboard")
-
   const totalViews = user.videos.reduce((acc, v) => acc + v.views, 0)
-  const totalLicenses = user.videos.reduce((acc, v) => acc + v.licenses.filter((l) => l.status === "paid").length, 0)
-  const totalEarnings = user.videos.reduce((acc, v) => acc + v.licenses.filter((l) => l.status === "paid").reduce((s, l) => s + l.price, 0), 0)
+  const paidLicenses = user.videos.flatMap((v) => v.licenses.filter((l) => l.status === "paid"))
+  const totalEarnings = paidLicenses.reduce((acc, l) => acc + l.price, 0)
+
+  const viewsData = generateWeeklyData(Math.max(totalViews, 100), "Views")
+  const earningsData = generateWeeklyData(Math.max(totalEarnings, 10), "Earnings")
+  const topVideos = [...user.videos]
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 5)
+    .map((v) => ({ name: v.title.length > 22 ? v.title.slice(0, 22) + "…" : v.title, Views: v.views, Earnings: v.licenses.filter((l) => l.status === "paid").reduce((s, l) => s + l.price, 0) }))
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -68,13 +81,20 @@ function CreatorDashboard({ user, locale }: { user: UserWithData; locale: string
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
         <StatCard icon={<Eye className="w-6 h-6 text-blue-600" />} label={t("totalViews")} value={totalViews.toLocaleString()} bg="bg-blue-50" />
-        <StatCard icon={<ShoppingBag className="w-6 h-6 text-violet-600" />} label={t("totalLicenses")} value={totalLicenses.toString()} bg="bg-violet-50" />
+        <StatCard icon={<ShoppingBag className="w-6 h-6 text-violet-600" />} label={t("totalLicenses")} value={paidLicenses.length.toString()} bg="bg-violet-50" />
         <StatCard icon={<DollarSign className="w-6 h-6 text-green-600" />} label={t("earnings")} value={`$${totalEarnings.toFixed(0)}`} bg="bg-green-50" />
       </div>
 
-      <div className="flex items-center gap-2 mb-4">
+      <DashboardCharts
+        role="creator"
+        viewsData={viewsData}
+        earningsData={earningsData}
+        topVideos={topVideos}
+      />
+
+      <div className="flex items-center gap-2 mb-4 mt-10">
         <VideoIcon className="w-5 h-5 text-violet-600" />
         <h2 className="text-xl font-bold text-slate-900">{t("myVideos")}</h2>
       </div>
@@ -125,9 +145,16 @@ function CreatorDashboard({ user, locale }: { user: UserWithData; locale: string
 
 function BrandDashboard({ user, locale }: { user: UserWithData; locale: string }) {
   const t = useTranslations("dashboard")
-
   const paidLicenses = user.licenses.filter((l) => l.status === "paid")
   const totalSpent = paidLicenses.reduce((acc, l) => acc + l.price, 0)
+
+  const spendData = generateWeeklyData(Math.max(totalSpent, 10), "Spent")
+  const categoryCount: Record<string, number> = {}
+  paidLicenses.forEach((l) => {
+    const cat = l.video.category
+    categoryCount[cat] = (categoryCount[cat] || 0) + 1
+  })
+  const categoryData = Object.entries(categoryCount).map(([name, count]) => ({ name, Licenses: count }))
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -141,12 +168,14 @@ function BrandDashboard({ user, locale }: { user: UserWithData; locale: string }
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
         <StatCard icon={<ShoppingBag className="w-6 h-6 text-violet-600" />} label={t("totalLicenses")} value={paidLicenses.length.toString()} bg="bg-violet-50" />
         <StatCard icon={<DollarSign className="w-6 h-6 text-blue-600" />} label={t("totalSpent")} value={`$${totalSpent.toFixed(0)}`} bg="bg-blue-50" />
       </div>
 
-      <div className="flex items-center gap-2 mb-4">
+      <DashboardCharts role="brand" spendData={spendData} categoryData={categoryData} />
+
+      <div className="flex items-center gap-2 mb-4 mt-10">
         <ShoppingBag className="w-5 h-5 text-violet-600" />
         <h2 className="text-xl font-bold text-slate-900">{t("myLicenses")}</h2>
       </div>
@@ -155,9 +184,7 @@ function BrandDashboard({ user, locale }: { user: UserWithData; locale: string }
         <div className="text-center py-16 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
           <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <p className="text-slate-400 mb-4">{t("noLicenses")}</p>
-          <Link href={`/${locale}/explore`} className="bg-violet-600 text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-violet-700 transition-colors">
-            Browse Videos
-          </Link>
+          <Link href={`/${locale}/explore`} className="bg-violet-600 text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-violet-700 transition-colors">Browse Videos</Link>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">

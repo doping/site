@@ -7,7 +7,7 @@ import { ShieldCheck, Zap, Crown } from "lucide-react"
 import type { Session } from "next-auth"
 
 interface LicenseButtonsProps {
-  video: { id: string; price: number; currency: string }
+  video: { id: string; price: number; currency: string; creatorId: string }
   locale: string
   session: Session | null
 }
@@ -17,11 +17,22 @@ export default function LicenseButtons({ video, locale, session }: LicenseButton
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
 
+  const isOwnVideo = session?.user?.id === video.creatorId
+
   const plans = [
     { type: "standard", label: t("standard"), desc: t("standardDesc"), price: video.price, icon: <ShieldCheck className="w-5 h-5" />, color: "border-slate-200 hover:border-violet-400" },
     { type: "extended", label: t("extended"), desc: t("extendedDesc"), price: video.price * 2.5, icon: <Zap className="w-5 h-5" />, color: "border-slate-200 hover:border-violet-400" },
     { type: "exclusive", label: t("exclusive"), desc: t("exclusiveDesc"), price: video.price * 8, icon: <Crown className="w-5 h-5 text-amber-500" />, color: "border-amber-200 hover:border-amber-400" },
   ]
+
+  if (isOwnVideo) {
+    return (
+      <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-5 text-center">
+        <p className="text-slate-400 text-sm font-medium">This is your video</p>
+        <p className="text-slate-400 text-xs mt-1">Creators cannot purchase their own content</p>
+      </div>
+    )
+  }
 
   const handleBuy = async (licenseType: string, price: number) => {
     if (!session) {

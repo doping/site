@@ -148,6 +148,13 @@
     "nature": "Nature",
     "animals": "Animals",
     "music": "Music",
-    "business": "Business"
+    "business": "Business",
+    "diy": "DIY",
+    "gaming": "Gaming",
+    "comedy": "Comedy",
+    "fitness": "Fitness",
+    "education": "Education",
+    "beauty": "Beauty",
+    "art": "Art"
   }
 }
