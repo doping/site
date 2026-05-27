@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma"
 import { authOptions } from "@/lib/auth"
 import { Eye, Clock, Tag, Award, ExternalLink } from "lucide-react"
 import LicenseButtons from "@/components/LicenseButtons"
+import ShareButtons from "@/components/ShareButtons"
 import type { Session } from "next-auth"
 
 type VideoWithCreator = Video & { creator: User }
@@ -65,6 +66,11 @@ function VideoDetailContent({ video, related, locale, session, existingLicense }
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2">
           <VideoPlayer url={video.url} thumbnail={video.thumbnail} title={video.title} />
+
+          {/* Share buttons — prominently visible right after the player */}
+          <div className="mt-4">
+            <ShareButtons title={video.title} />
+          </div>
 
           <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 mt-6 mb-3">{video.title}</h1>
 
@@ -121,6 +127,11 @@ function VideoDetailContent({ video, related, locale, session, existingLicense }
             <div className="mt-4 pt-4 border-t border-slate-100 space-y-2 text-xs text-slate-500">
               <div className="flex justify-between"><span>{t("duration")}</span><span>{video.duration ? `${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, "0")}` : "—"}</span></div>
               <div className="flex justify-between"><span>{t("category")}</span><span className="capitalize">{video.category}</span></div>
+            </div>
+
+            {/* Compact share strip in sidebar */}
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <ShareButtons title={video.title} />
             </div>
           </div>
         </div>
