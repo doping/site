@@ -116,51 +116,39 @@ async function main() {
   })
 
   const creators = [creator, creator2, creator3, creator4]
+  const createdVideos: { id: string }[] = []
 
-  // Only seed videos and licenses if they don't exist yet (idempotent)
-  const existingVideoCount = await prisma.video.count()
+  for (let i = 0; i < VIDEOS_DATA.length; i++) {
+    const vd = VIDEOS_DATA[i]
+    const creatorUser = creators[i % creators.length]
+    const thumb = THUMBNAILS[i % THUMBNAILS.length]
 
-  if (existingVideoCount === 0) {
-    const createdVideos: { id: string }[] = []
-
-    for (let i = 0; i < VIDEOS_DATA.length; i++) {
-      const vd = VIDEOS_DATA[i]
-      const creatorUser = creators[i % creators.length]
-      const thumb = THUMBNAILS[i % THUMBNAILS.length]
-
-      const video = await prisma.video.create({
-        data: {
-          title: vd.title,
-          description: `High quality ${vd.category} content perfect for commercial use. Professionally shot and edited.`,
-          category: vd.category,
-          tags: vd.tags,
-          price: vd.price,
-          url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-          thumbnail: thumb,
-          duration: vd.duration,
-          featured: vd.featured,
-          views: vd.views,
-          status: "active",
-          creatorId: creatorUser.id,
-        },
-      })
-      createdVideos.push(video)
-    }
-
-    // Only create demo licenses if no licenses exist
-    const existingLicenseCount = await prisma.license.count()
-    if (existingLicenseCount === 0) {
-      await prisma.license.createMany({
-        data: [
-          { videoId: createdVideos[0].id, buyerId: brand.id, type: "standard", price: 89, currency: "USD", status: "paid", paymentId: "demo_pay_001" },
-          { videoId: createdVideos[1].id, buyerId: brand.id, type: "extended", price: 300, currency: "USD", status: "paid", paymentId: "demo_pay_002" },
-          { videoId: createdVideos[2].id, buyerId: brand.id, type: "standard", price: 150, currency: "USD", status: "paid", paymentId: "demo_pay_003" },
-        ],
-      })
-    }
-  } else {
-    console.log(`ℹ️  Skipping video/license seed — ${existingVideoCount} videos already exist.`)
+    const video = await prisma.video.create({
+      data: {
+        title: vd.title,
+        description: `High quality ${vd.category} content perfect for commercial use. Professionally shot and edited.`,
+        category: vd.category,
+        tags: vd.tags,
+        price: vd.price,
+        url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        thumbnail: thumb,
+        duration: vd.duration,
+        featured: vd.featured,
+        views: vd.views,
+        status: "active",
+        creatorId: creatorUser.id,
+      },
+    })
+    createdVideos.push(video)
   }
+
+  await prisma.license.createMany({
+    data: [
+      { videoId: createdVideos[0].id, buyerId: brand.id, type: "standard", price: 89, currency: "USD", status: "paid", paymentId: "demo_pay_001" },
+      { videoId: createdVideos[1].id, buyerId: brand.id, type: "extended", price: 300, currency: "USD", status: "paid", paymentId: "demo_pay_002" },
+      { videoId: createdVideos[2].id, buyerId: brand.id, type: "standard", price: 150, currency: "USD", status: "paid", paymentId: "demo_pay_003" },
+    ],
+  })
 
   console.log("✅ Seed completed!")
   console.log("Demo accounts:")
